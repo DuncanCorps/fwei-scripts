@@ -1,0 +1,16 @@
+#!/bin/bash
+
+for photographFile in ????-??-??\ ??.??.??*.jpg
+do
+  if [ -f "${photographFile}" ]
+  then
+    ccyy=`cut --characters=1-4 <<< "${photographFile}"`
+    mm=`cut --characters=6-7 <<< "${photographFile}"`
+    mkdir --parents --verbose ${ccyy}/${ccyy}-${mm}
+    mv-same "${photographFile}" "${ccyy}/${ccyy}-${mm}/${photographFile}"
+  fi
+done
+
+find . -type d -empty -delete
+
+exit 0

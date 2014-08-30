@@ -1,0 +1,71 @@
+#!/bin/bash
+
+function element()
+{
+  echo "${1}<${2}>${3}</${2}>"
+}
+
+function starttime()
+{
+  starttime=`date --utc +%Y\ %m\ %d\ %H\ %M\ %S`
+
+  echo "  <starttime>"
+  element "    " year `cut --delimiter=\  --fields=1 <<< ${starttime}`
+  element "    " month `cut --delimiter=\  --fields=2 <<< ${starttime}`
+  element "    " day `cut --delimiter=\  --fields=3 <<< ${starttime}`
+  element "    " hour `cut --delimiter=\  --fields=4 <<< ${starttime}`
+  element "    " minute `cut --delimiter=\  --fields=5 <<< ${starttime}`
+  element "    " second `cut --delimiter=\  --fields=6 <<< ${starttime}`
+  echo "  </starttime>"
+}
+
+function static()
+{
+  echo "  <static>"
+  element "    " duration ${1}
+  element "    " file "${2}"
+  echo "  </static>"
+}
+
+function transition()
+{
+  echo "  <transition>"
+  element "    " duration ${1}
+  element "    " from "${2}"
+  element "    " to "${3}"
+  echo "  </transition>"
+}
+
+staticDuration=${1:-290}
+transitionDuration=${2:-10}
+
+temporaryFile=`mktemp`
+find . -type f \( -iname *.gif -o -iname *.jp*g -o -iname *.png \) | cut --characters=2- | sort > ${temporaryFile}
+readarray -t backgrounds < ${temporaryFile}
+rm --force ${temporaryFile}
+
+backgroundsSize=${#backgrounds[*]}
+
+echo "<background>"
+starttime
+
+for ((fromIndex = 0 ; ${fromIndex} < ${backgroundsSize} ; fromIndex++))
+do
+  toIndex=$((${fromIndex} + 1))
+
+  from="${PWD}${backgrounds[${fromIndex}]}"
+
+  if [ ${toIndex} -gt ${backgroundsSize} ]
+  then
+    to="${PWD}${backgrounds[0]}"
+  else
+    to="${PWD}${backgrounds[${toIndex}]}"
+  fi
+
+  static ${staticDuration} "${from}"
+  transition ${transitionDuration} "${from}" "${to}"
+done
+
+echo "</background>"
+
+exit 0

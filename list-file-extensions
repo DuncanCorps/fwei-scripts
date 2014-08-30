@@ -1,0 +1,15 @@
+#!/bin/bash
+
+readonly FILE_EXTENSION_DELIMITER=.
+
+find . -type f -name \*${FILE_EXTENSION_DELIMITER}\* | while true
+do
+	if read filename
+	then
+		basename "${filename}" | rev | cut --fields=1 --delimiter=${FILE_EXTENSION_DELIMITER} | rev
+	else
+		break
+	fi
+done | sort -u
+
+exit 0

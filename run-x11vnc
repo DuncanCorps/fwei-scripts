@@ -1,0 +1,13 @@
+#!/bin/bash
+
+display=:0
+geometry=1280x720
+rfbport=5900
+scale=${geometry}
+
+/usr/bin/x11vnc -display ${display} -geometry ${geometry} -localhost -noipv6 -o ${0}.${rfbport}.log -rfbport ${rfbport}
+#
+# -scale ${scale}
+# -ncache 10
+
+exit 0

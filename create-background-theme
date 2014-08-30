@@ -1,0 +1,50 @@
+#!/bin/bash
+
+imagesRootPath=${1:-%USERPROFILE%/Dropbox/Windows themes}
+intervalDuration=${2:-300}
+
+temporaryFile=`mktemp`
+find . -type f \( -iname *.gif -o -iname *.jp*g -o -iname *.png \) | cut --characters=2- | sort > ${temporaryFile}
+readarray -t backgrounds < ${temporaryFile}
+rm --force ${temporaryFile}
+
+imagesRootPath=${imagesRootPath////\\}
+pathSeparator=\
+
+echo "[Theme]"
+echo "DisplayName=Duncan Corps"
+echo
+echo "[Control Panel\Desktop]"
+echo "Wallpaper=${imagesRootPath}${pathSeparator}${backgrounds[0]////\\}"
+echo "TileWallpaper=0"
+echo "WallpaperStyle=2"
+echo
+echo "[VisualStyles]"
+echo "Path=%SystemRoot%\Resources\Themes\Aero\aero.msstyles"
+echo "ColorStyle=NormalColor"
+echo "Size=NormalSize"
+echo "ColorizationColor=0X80555555"
+echo "Transparency=1"
+echo
+echo "[Sounds]"
+echo "SchemeName=Quirky"
+echo
+echo "[Boot]"
+echo "SCRNSAVE.EXE=%SystemRoot%\System32\ssText3d.scr"
+echo
+echo "[MasterThemeSelector]"
+echo "MTSM=DABJDKT"
+echo
+echo "[Slideshow]"
+echo "Interval=${intervalDuration}000"
+echo "Shuffle=1"
+echo "ImagesRootPath=${imagesRootPath}"
+
+backgroundsSize=${#backgrounds[*]}
+
+for ((itemIndex = 0 ; ${itemIndex} < ${backgroundsSize} ; itemIndex++))
+do
+  echo "Item${itemIndex}Path=${imagesRootPath}${pathSeparator}${backgrounds[${itemIndex}]////\\}"
+done
+
+exit 0
