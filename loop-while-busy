@@ -1,0 +1,33 @@
+#!/bin/bash
+
+readonly BUSY=Busy
+readonly IDLE=Idle
+
+status=${BUSY}
+
+while [ ${status} == ${BUSY} ]
+do
+  status=${IDLE}
+
+  if is-fetchnews-running
+  then
+    status=${BUSY}
+    find /var/spool/news/message.id/ -type f -mmin -1 -exec grep \^Date:\  {} +
+  else
+    if mount | fgrep --quiet /dev/sdb1\ on\ /backup
+    then
+      status=${BUSY}
+    fi
+  fi
+
+  echo -n ${status} at\ 
+  date
+
+  if [ ${status} == ${BUSY} ]
+  then
+    sleep 90s
+  fi
+done
+
+exit 0
+

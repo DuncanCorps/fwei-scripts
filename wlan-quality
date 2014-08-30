@@ -1,0 +1,37 @@
+#!/bin/bash
+
+function test-quality()
+{
+  deviceName=${1}
+  interfaceAddress=${2}
+  count=${3}
+
+  # /etc/cron.hourly/${deviceName}-fwei
+  averagePing=`ping -c 5 -I ${interfaceAddress} sol | fgrep rtt\ min/avg/max/mdev | cut --delimiter=/ --fields=5`
+  linkQuality=`iwconfig ${deviceName} | fgrep Link\ Quality= | cut --delimiter== --fields=2 | cut --delimiter=/ --fields=1`
+  echo ${count},${averagePing},${linkQuality}
+}
+
+
+if [ ${#} -lt 1 ]
+then
+  ${0} 10
+else
+  deviceName=`basename ${0} | cut --delimiter=- --fields=1`
+  ifconfig ${deviceName}
+  iwconfig ${deviceName}
+  interfaceAddress=`ifconfig ${deviceName} | fgrep inet\ addr | cut --delimiter=: --fields=2 | cut --delimiter=\  --fields=1`
+  echo Count,Average ping,Link quality
+
+  for (( count=1 ; count <= ${1} ; count++ ))
+  do
+    test-quality ${deviceName} ${interfaceAddress} ${count}
+    if [ ${count} -lt ${1} ]
+    then
+      sleep 5
+    fi
+  done
+fi
+
+exit 0
+

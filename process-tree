@@ -1,0 +1,19 @@
+#! /bin/bash
+
+psArguments='--forest --format state,pid,ppid,pcpu,pmem,euser,start_time,command'
+true
+exitStatus=${?}
+
+if [ ${#} -ge 1 ]
+then
+  for p in ${*}
+  do
+    ps -p ${p} ${psArguments}
+    exitStatus=${?}
+  done
+else
+  ps -e ${psArguments}
+  exitStatus=${?}
+fi
+
+exit ${exitStatus}

@@ -1,0 +1,17 @@
+#!/bin/bash
+#  Make a list of all the packages installed on a system, then work out which
+#  are installed multiple times. Often it is safe to remove all but one
+#  instance of a package, but sometimes it isn't (e.g. if a system uses both
+#  32-bit and 64-bit versions of the same package).
+#
+outputFileBase="rpm-duplicates.output"
+/bin/rm --force ${outputFileBase} ${outputFileBase}.uniq
+/bin/rpm --query --all --queryformat "%{NAME}\n" | /bin/sort > ${outputFileBase}
+/usr/bin/uniq --ignore-case ${outputFileBase} ${outputFileBase}.uniq
+
+for packageName in `/usr/bin/diff ${outputFileBase} ${outputFileBase}.uniq | grep \^.\  | cut --characters=3- | uniq`; do
+  echo "-- Possible duplicate packages: "
+  /bin/rpm --query --queryformat "%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n" ${packageName}
+done
+
+exit 0

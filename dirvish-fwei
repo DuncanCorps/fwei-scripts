@@ -1,0 +1,100 @@
+#!/bin/bash
+
+function log() {
+  echo `date --utc +%F\ %T` ${*}
+}
+
+BACKUP_MOUNT_POINT=/backup
+
+log Started
+
+mountpoint --quiet ${BACKUP_MOUNT_POINT}
+leaveBackupMounted=${?}
+
+if [ ${leaveBackupMounted} -eq 0 ] ; then
+  log ${BACKUP_MOUNT_POINT} already mounted
+else
+  mkdir --mode=0700 --parents ${BACKUP_MOUNT_POINT}
+  BACKUP_LABEL=/backup
+  mount --label ${BACKUP_LABEL} ${BACKUP_MOUNT_POINT}
+fi
+
+if mountpoint --quiet ${BACKUP_MOUNT_POINT} ; then
+  # bankValue=`grep --after-context=1 \^bank:\$ /etc/dirvish/master.conf | tail --lines=1`
+  # dirvishBank=`dirname ${bankValue}`/`basename ${bankValue}`
+  dirvishBank=`grep --after-context=1 \^bank:\$ /etc/dirvish/master.conf | tail --lines=1`
+  dirvishVault=`hostname`-vault
+  fileExclude=`fgrep file-exclude ${dirvishBank}/${dirvishVault}/dirvish/default.conf | cut --fields 2 --delimiter \ `
+
+  log Dirvish bank is ${dirvishBank}
+  log Dirvish vault is ${dirvishVault}
+  log File exclude is ${fileExclude}
+
+  if [ -n "${fileExclude}" ] ; then
+    # Exclude everything which is owned by a package and isn't configuration
+    excludes1=`mktemp`
+    rpm --query --all --queryformat "[%{FILEFLAGS:fflags} %{FILENAMES}\n]" | grep -v "^[^ ]*c[^ ]* " | cut --delimiter=\  --fields=2- > ${excludes1}
+
+    # Exclude everything which is a block (buffered) special, character (unbuffered) special, named pipe (FIFO) or socket (but don't waste time looking on the backup device!)
+    excludes2=`mktemp`
+    find / -path ${BACKUP_MOUNT_POINT} -prune -o -type b -o -type c -o -type p -o -type s > ${excludes2}
+
+    sort --unique ${excludes1} ${excludes2} | while read exclude ; do
+      # Never exclude a directory
+      if [ -e "${exclude}" ] && [ ! -d "${exclude}" ] ; then
+        echo ${exclude}
+      fi
+    done > "${fileExclude}"
+
+    log `wc -l "${fileExclude}"`
+    log Running dirvish-expire for vault ${dirvishVault}
+
+    if dirvish-expire --vault ${dirvishVault} ; then
+      log dirvish-expire success
+      log Running dirvish for vault ${dirvishVault}
+
+      if dirvish --vault ${dirvishVault} ; then
+        log dirvish success
+      elif dirvish --init --vault ${dirvishVault} ; then
+        log dirvish --init success
+      else
+        log dirvish failure, exit code ${?}
+      fi
+    else
+      log dirvish-expire failure, exit code ${?}
+    fi
+  else
+    log No file-exclude
+  fi
+
+  if [ ${leaveBackupMounted} -eq 0 ] ; then
+    log Leaving ${BACKUP_MOUNT_POINT} mounted
+  else
+    dayOfWeek=`date --utc +%u`
+
+    # It's Monday, so do some extra housekeeping
+    if [ ${dayOfWeek} -eq 1 ] ; then
+      log Doing Monday housekeeping
+      # Ensure that the absolute minimum of space is being used by hard linking duplicate files
+      # log Finding duplicates
+      # /usr/share/fslint/fslint/findup -m ${BACKUP_MOUNT_POINT}
+      # Find out what the device is (so that it can be passed to fsck)
+      BACKUP_DEVICE=`mount --show-labels | fgrep \[${BACKUP_LABEL}\] | cut --delimiter=\  --fields=1`
+    fi
+
+    log Unmounting ${BACKUP_MOUNT_POINT}
+    umount ${BACKUP_MOUNT_POINT}
+
+    if [ ${dayOfWeek} -eq 1 ] ; then
+      # Check the filesystem for errors and try to fix them
+      log Checking filesystem
+      fsck.ext4 -f -v -y ${BACKUP_DEVICE}
+    fi
+  fi
+else
+  log ${BACKUP_MOUNT_POINT} not mounted
+fi
+
+log Finished
+
+exit 0

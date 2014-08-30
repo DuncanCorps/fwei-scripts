@@ -1,0 +1,35 @@
+#!/bin/bash
+
+function ch-mod-own()
+{
+# ---
+#  Change permissions
+# ---
+  chmod ${1} ${3}
+# ---
+#  Change ownership
+# ---
+  chown ${2} ${3}
+}
+
+pushd /var/run
+
+# ---
+#  Create some missing directories
+# ---
+mkdir --parents hald NetworkManager setroubleshoot wpa_supplicant
+
+ch-mod-own 0700 haldaemon:haldaemon hald
+ch-mod-own 0755 root:root NetworkManager
+ch-mod-own 0755 root:root setroubleshoot
+ch-mod-own 0755 root:root wpa_supplicant
+
+popd
+
+ch-mod-own 0644 root:lp /etc/cups/subscriptions.conf
+ch-mod-own 0755 root:root /var/log/gdm
+ch-mod-own 1777 root:gdm /var/run/gdm
+ch-mod-own 1755 gdm:gdm /var/run/gdm/greeter
+ch-mod-own 0750 qemu:qemu /var/cache/libvirt/qemu
+
+exit 0

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+exitStatus=1
+
+if [ -f "${1}" ] ; then
+  if [ -f "${2}" ] ; then
+    if diff --brief --report-identical-files "${1}" "${2}" ; then
+      ln --force --verbose "${1}" "${2}"
+      exitStatus=${?}
+    fi
+  fi
+fi
+
+exit ${exitStatus}
+
