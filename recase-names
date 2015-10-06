@@ -1,0 +1,76 @@
+#!/bin/bash
+
+directories=false
+files=false
+lower=false
+symbolicLinks=false
+upper=false
+
+while getopts :dflsu option  ; do
+  case ${option} in
+    d)
+      directories=true
+      ;;
+    f)
+      files=true
+      ;;
+    l)
+      lower=true
+      upper=false
+      ;;
+    s)
+      symbolicLinks=true
+      ;;
+    u)
+      lower=false
+      upper=true
+      ;;
+  esac
+done
+
+if ${lower} || ${upper} ; then
+  shift $((OPTIND-1))
+
+  argument="${1:-.}"
+
+  if ${directories} ; then
+    types='-type d'
+  fi
+
+  if ${files} ; then
+    if [ "${types}" ] ; then
+      types="${types} -o -type f"
+    else
+      types='-type f'
+    fi
+  fi
+
+  if ${symbolicLinks} ; then
+    if [ "${types}" ] ; then
+      types="${types} -o -type l"
+    else
+      types='-type l'
+    fi
+  fi
+
+  types="${types:--false}"
+
+  find ${argument} -depth ${types} | while read pathName ; do
+    nameFrom=`basename "${pathName}"`
+
+    if ${lower} ; then
+      nameTo="${nameFrom,,}"
+    elif ${upper} ; then
+      nameTo="${nameFrom^^}"
+    else
+      nameTo="${nameFrom}"
+    fi
+
+    if [ "${nameFrom}" != "${nameTo}" ] ; then
+      path=`dirname "${pathName}"`
+      echo mv --no-clobber --verbose "${path}/${nameFrom}" "${path}/${nameTo}"
+    fi
+  done
+fi
+
+exit 0
