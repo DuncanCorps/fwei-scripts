@@ -29,10 +29,6 @@ while getopts :dflsu option  ; do
 done
 
 if ${lower} || ${upper} ; then
-  shift $((OPTIND-1))
-
-  argument="${1:-.}"
-
   if ${directories} ; then
     types='-type d'
   fi
@@ -53,24 +49,37 @@ if ${lower} || ${upper} ; then
     fi
   fi
 
-  types="${types:--false}"
+  if [ "${types}" ] ; then
+    shift $((OPTIND-1))
 
-  find ${argument} -depth ${types} | while read pathName ; do
-    nameFrom=`basename "${pathName}"`
+    argument="${1:-.}"
 
-    if ${lower} ; then
-      nameTo="${nameFrom,,}"
-    elif ${upper} ; then
-      nameTo="${nameFrom^^}"
-    else
-      nameTo="${nameFrom}"
-    fi
+    find ${argument} -depth ${types} | while read pathName ; do
+      nameFrom=`basename "${pathName}"`
 
-    if [ "${nameFrom}" != "${nameTo}" ] ; then
-      path=`dirname "${pathName}"`
-      echo mv --no-clobber --verbose "${path}/${nameFrom}" "${path}/${nameTo}"
-    fi
-  done
+      if ${lower} ; then
+        nameTo="${nameFrom,,}"
+      elif ${upper} ; then
+        nameTo="${nameFrom^^}"
+      else
+        nameTo="${nameFrom}"
+      fi
+
+      if [ "${nameFrom}" != "${nameTo}" ] ; then
+        path=`dirname "${pathName}"`
+
+        if [ -e "${path}/${nameTo}" ] ; then
+          echo nameTo \[${path}/${nameTo}\] exists
+        else
+          mv --no-clobber --verbose "${path}/${nameFrom}" "${path}/${nameTo}"
+        fi
+      fi
+    done
+  else
+    echo TODO You must specify -d OR -f OR -s
+  fi
+else
+  echo TODO You must specify -l xor -u
 fi
 
 exit 0
