@@ -1,12 +1,20 @@
 #!/bin/bash
 
 display=:0
-geometry=1280x720
+# geometry=2560x720
+geometry=2880x910
 rfbport=5900
 scale=${geometry}
 
-/usr/bin/x11vnc -display ${display} -geometry ${geometry} -localhost -noipv6 -o ${0}.${rfbport}.log -rfbport ${rfbport}
-#
+/usr/bin/x11vnc \
+  -auth guess \
+  -display ${display} \
+  -geometry ${geometry} \
+  -localhost \
+  -noipv6 \
+  -o ${0}.${rfbport}.log \
+  -rfbport ${rfbport}
+
 # -scale ${scale}
 # -ncache 10
 
